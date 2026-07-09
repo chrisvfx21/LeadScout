@@ -420,7 +420,7 @@ export default function App() {
       setGoogleResults(shuffled.slice(0, 6));
       setGoogleLoading(false);
     });
-  }, []);
+}, [category, area]);
 
   useEffect(() => {
     if (!category || !area) {
@@ -452,7 +452,7 @@ export default function App() {
       if (view === "search" && onlyNoWebsite && b.has_website) return false;
       return true;
     });
-  }, [businesses, googleResults, category, area, query, onlyNoWebsite, view]);
+  }, [businesses, googleResults, query, onlyNoWebsite, view]);
 
   const noWebsiteCount = businesses.filter(b => !b.has_website).length;
   const handleClaimClick = (biz) => setModalBiz(biz);
