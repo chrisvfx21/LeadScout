@@ -566,6 +566,7 @@ export default function App() {
       }
 
       setBusinesses(prev => prev.map(b => b.id === businessId ? { ...b, has_website: true } : b));
+      setGoogleResults(prev => prev.map(b => b.id === businessId ? { ...b, has_website: true } : b));
     }
 
     setClaimedIds(prev => {
