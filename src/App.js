@@ -140,6 +140,40 @@ function BusinessCard({ biz, onClaim, claimedIds }) {
   );
 }
 
+function ClaimedLeadCard({ biz, onReportOutcome }) {
+  const initials = biz.name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
+  return (
+    <div style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, borderRadius: "14px", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: NAVY, color: ORANGE, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "14px", flexShrink: 0 }}>{initials}</div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: INK }}>{biz.name}</h3>
+          <p style={{ margin: "2px 0 0", fontSize: "13px", color: MUTED }}>{biz.category}</p>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "#4B5563" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><MapPin size={14} color="#9CA3AF" /> {biz.area}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Phone size={14} color="#9CA3AF" /> {biz.phone}</div>
+      </div>
+      <p style={{ margin: 0, fontSize: "12px", color: MUTED }}>Did you land this client?</p>
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          onClick={() => onReportOutcome(biz.id, "won")}
+          style={{ flex: 1, background: "#0F6E56", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 10px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+        >
+          Won it
+        </button>
+        <button
+          onClick={() => onReportOutcome(biz.id, "lost")}
+          style={{ flex: 1, background: "#fff", color: MUTED, border: `1px solid ${BORDER}`, borderRadius: "8px", padding: "9px 10px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+        >
+          Didn't work out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ClaimModal({ biz, onClose, onConfirm, isDesigner }) {
   if (!biz) return null;
   return (
@@ -303,22 +337,27 @@ function DesignerAuthForm({ onAuthed }) {
   );
 }
 
-function DesignerDashboard({ designer, results, filters, onClaim, claimedIds, allBusinesses, areaSuggestions, showAreaSuggestions, setShowAreaSuggestions }) {
+function DesignerDashboard({ designer, results, filters, onClaim, claimedIds, allBusinesses, areaSuggestions, showAreaSuggestions, setShowAreaSuggestions, onReportOutcome }) {
   const { category, setCategory, area, setArea, query, setQuery } = filters;
   const claimedBusinesses = allBusinesses.filter(b => claimedIds.has(b.id));
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-        <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: NAVY, color: ORANGE, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "14px" }}>
-          {designer.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: INK }}>{designer.name}</p>
-          <p style={{ margin: 0, fontSize: "13px", color: MUTED }}>{designer.email}</p>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
+        marginBottom: "24px", background: "#fff", border: `1px solid ${BORDER}`, borderRadius: "14px", padding: "14px 18px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: NAVY, color: ORANGE, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "14px", flexShrink: 0 }}>
+            {designer.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: INK }}>{designer.name}</p>
+            <p style={{ margin: 0, fontSize: "13px", color: MUTED }}>{designer.email}</p>
+          </div>
         </div>
         <button
           onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
-          style={{ background: "none", border: `1px solid ${BORDER}`, borderRadius: "8px", padding: "8px 12px", fontSize: "13px", cursor: "pointer", color: MUTED }}
+          style={{ background: "none", border: `1px solid ${BORDER}`, borderRadius: "8px", padding: "8px 12px", fontSize: "13px", cursor: "pointer", color: MUTED, whiteSpace: "nowrap" }}
         >
           Log out
         </button>
@@ -328,7 +367,7 @@ function DesignerDashboard({ designer, results, filters, onClaim, claimedIds, al
           <h3 style={{ fontSize: "14px", fontWeight: 600, color: INK, marginBottom: "10px" }}>Your claimed leads ({claimedBusinesses.length})</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
             {claimedBusinesses.map(biz => (
-              <BusinessCard key={`claimed-${biz.id}`} biz={biz} onClaim={() => {}} claimedIds={claimedIds} />
+              <ClaimedLeadCard key={`claimed-${biz.id}`} biz={biz} onReportOutcome={onReportOutcome} />
             ))}
           </div>
         </div>
@@ -392,7 +431,8 @@ export default function App() {
       const { data, error } = await supabase
         .from("claims")
         .select("business_id")
-        .eq("designer_id", designer.id);
+        .eq("designer_id", designer.id)
+        .eq("status", "pending");
       if (!error && data) {
         setClaimedIds(new Set(data.map(c => c.business_id)));
       }
@@ -420,7 +460,7 @@ export default function App() {
       setGoogleResults(shuffled.slice(0, 6));
       setGoogleLoading(false);
     });
-}, [category, area]);
+  }, [category, area]);
 
   useEffect(() => {
     if (!category || !area) {
@@ -491,6 +531,7 @@ export default function App() {
       const { error } = await supabase.from("claims").insert({
         business_id: businessId,
         designer_id: designer.id,
+        status: "pending",
       });
       if (error) {
         alert("Couldn't claim this lead: " + error.message);
@@ -499,6 +540,39 @@ export default function App() {
       setClaimedIds(prev => new Set(prev).add(businessId));
       setModalBiz(null);
     }
+  };
+
+  const handleReportOutcome = async (businessId, outcome) => {
+    const { error: claimError } = await supabase
+      .from("claims")
+      .update({ status: outcome })
+      .eq("business_id", businessId)
+      .eq("designer_id", designer.id);
+
+    if (claimError) {
+      alert("Couldn't update this lead: " + claimError.message);
+      return;
+    }
+
+    if (outcome === "won") {
+      const { error: bizError } = await supabase
+        .from("businesses")
+        .update({ has_website: true })
+        .eq("id", businessId);
+
+      if (bizError) {
+        alert("Claim updated, but couldn't update the business: " + bizError.message);
+        return;
+      }
+
+      setBusinesses(prev => prev.map(b => b.id === businessId ? { ...b, has_website: true } : b));
+    }
+
+    setClaimedIds(prev => {
+      const next = new Set(prev);
+      next.delete(businessId);
+      return next;
+    });
   };
 
   return (
@@ -571,6 +645,7 @@ export default function App() {
                 areaSuggestions={areaSuggestions}
                 showAreaSuggestions={showAreaSuggestions}
                 setShowAreaSuggestions={setShowAreaSuggestions}
+                onReportOutcome={handleReportOutcome}
               />
             )}
           </div>
